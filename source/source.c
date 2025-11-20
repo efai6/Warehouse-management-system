@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "init.h"
 
 int main(int argc, char** argv) {
     char inp[100];
@@ -11,15 +12,15 @@ int main(int argc, char** argv) {
         return 3;
 
     }
-    FILE *fptr;
-    fptr = fopen(argv[1], "r");
-    fgets(inp, 100, fptr);
-    fclose(fptr);
-    sscanf(inp, "%7s %30s", cmd,file);
+    FILE *fvar;
+    fvar = fopen(argv[1], "r");
+    fgets(inp, 100, fvar);
+    fclose(fvar);
+    sscanf(inp, "%6s %29s", cmd,file);
 
     if(strcmp(cmd, "init") == 0){
+        initialize(file);
         
-
     }
     else if(strcmp(cmd, "update") == 0){
 
@@ -28,3 +29,4 @@ int main(int argc, char** argv) {
 
     }
 }
+
