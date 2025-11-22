@@ -1,12 +1,13 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-void initialize(const char *file) {
+
+void initialize(char filename[]) {
     char inp[100];
     FILE *fvar;
-    fvar = fopen(file, "r");
+    fvar = fopen(filename, "r");
+    fgets(inp, 100, fvar);
     while (fgets(inp, 100, fvar)) {
         printf("%s", inp);
+        
     }
 
     fclose(fvar);
