@@ -1,0 +1,1 @@
+void print_txt(char filename[],struct Object *objects, int objectCount);

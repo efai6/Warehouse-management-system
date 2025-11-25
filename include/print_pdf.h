@@ -1,0 +1,1 @@
+void print_pdf(char filename[],struct Object *objects, int objectCount);

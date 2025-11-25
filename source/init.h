@@ -1,1 +1,0 @@
-void initialize(const char *file);
