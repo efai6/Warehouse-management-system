@@ -4,10 +4,11 @@
 #include "object.h"
 #include "print.h"
 #include "print_pdf.h"
-#include "init.h"
+#include "status.h"
 int apply_update_count(struct Object *obj, char zn, int num);
 int init_objects(char filename[30]);
 int update_objects(char filename[30]);
+int Object_code_check(char* code);
 struct Object objects[1000];
 int objectCount = 0;
 int res;
@@ -18,6 +19,8 @@ int main(int argc, char** argv) {
     char cmd[7];
     char filename[30];
     char filetype[4];
+    int stat = 0;
+    char status[10];
 
     if (argc < 3) {
         fprintf(stderr,"argument expected\n");
@@ -32,16 +35,30 @@ int main(int argc, char** argv) {
     strncpy(filetype, argv[2], 3);
     while (fgets(inp, 100, fvar)){
         sscanf(inp, "%6s %29s", cmd,filename);
-        if (strcmp(cmd,"init") == 0){   
+        if (strcmp(cmd,"init") == 0){ 
+            stat++;
+            sprintf(status,"Status%d",stat);
             if (initvar == 1){
                 fprintf(stderr, "Two init commands in the instruction file %s were given", argv[1]);
                 return 6;
             }
-            if (init_objects(filename) == 4){
+            int ResI = init_objects(filename);
+            if (ResI == 4){
                 fprintf(stderr, "Couldn't open file given for initialisation\n");
                 return init_objects(filename);
-            }}
+            }
+            else if (ResI==8){
+                fprintf(stderr, "The number of declarated objects in %s is smaller than number of objects given", filename);
+                return 8;
+            }
+            else {
+                print_status(status, objects,objectCount);
+            }
+        }
+
         else if (strcmp(cmd, "update") == 0) {
+            stat++;
+            sprintf(status,"Status%d",stat);
             if (initvar != 1){
                 fprintf(stderr, "The update was called before init in %s\n", argv[1]);
                 return 3;
@@ -54,6 +71,7 @@ int main(int argc, char** argv) {
             else if (resU == 2){
                 return resU;
             }
+            print_status(status, objects,objectCount);
         }
 
         else if (strcmp(cmd, "print") == 0) {
@@ -95,23 +113,27 @@ int init_objects(char filename[30]){
             fgets(inp, 100, ifvar);
             objectCount = atoi(inp);
             int validCount = 0;
-            for (int k = 0; k < objectCount; k++) {
-                fgets(inp, 100, ifvar);
+            int actualCount = 0;
+            while(fgets(inp, 100, ifvar)) {
                 sscanf(inp, "%5s %31[^\n]", code, name);
-                if(strlen(code) != 5){
-                    fprintf(stderr, "the %d object in the initialisation list (%s) has incorrect code given\n", k+1, filename);
+                if(Object_code_check(code) == 1){
+                    fprintf(stderr, "the %d object in the initialisation list (%s) has incorrect code given\n", actualCount+1, filename);
                     res++;
                     continue;
                 }
+                if (validCount<objectCount){
                 strcpy(objects[validCount].code, code);
                 strcpy(objects[validCount].name, name);
                 objects[validCount].quantity = 0;
-                validCount++;
+                validCount++;}
+            }
+            if (validCount > objectCount) {
+                return 8;
             }
         objectCount = validCount;
         fclose(ifvar);
         return 0;
-        }
+}
 int apply_update_count(struct Object *obj, char zn, int num) {
     if (zn == '+') {
         obj->quantity += num;
@@ -146,5 +168,27 @@ int update_objects(char filename[30]){
         }
     }
     fclose(ufvar);
+    return 0;
+}
+int Object_code_check(char* code){
+    int i;
+    if (strlen(code)!=5){
+        return 1;
+    }
+    for (i = 0;i<2;i++){
+        if(code[i] >= 'A'&& code[i]<= 'Z'){
+        }
+        else{
+            return 1;
+        }
+    }
+    for (i=2; i<5; i++){
+        int c_int = code[i] - '0';
+        if (c_int >=0 && c_int<=9){
+        }
+        else{
+            return 1;
+        }
+    }
     return 0;
 }

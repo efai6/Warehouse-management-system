@@ -1,0 +1,1 @@
+int Object_code_check(char* code);
