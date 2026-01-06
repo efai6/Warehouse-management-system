@@ -6,13 +6,16 @@
 #include "print.h"
 #include "print_pdf.h"
 #include "status.h"
-int apply_update_count(struct Object *obj, char zn, int num);
+int apply_update_count(struct Warehouse warehouse,struct Object *obj, char zn, int num);
 int init_objects(char filename[30]);
 int update_objects(char filename[30]);
 int Object_code_check(char* code);
 int CreateWarehouse(char filename[30]);
 int WarehouseCheck(struct Warehouse warehouse, int i);
 int Categories_check(struct Warehouse warehouse, int i);
+int object_properties_check(int obj_quantity, struct Object object, struct Warehouse warehouse);
+int transfer_objects(char filename[30]);
+int transfer_logic(int num,char object_code[], struct Warehouse *warehousefrom, struct Warehouse *warehouseto);
 struct Object objects[1000];
 struct Warehouse warehouses[100];
 category categories[10];
@@ -25,7 +28,7 @@ int warehouseCount = 0;
 
 int main(int argc, char** argv) {
     char inp[inpVar];
-    char cmd[7];
+    char cmd[12];
     char filename[30];
     char filetype[4];
     int stat = 0;
@@ -41,9 +44,10 @@ int main(int argc, char** argv) {
     if(!fvar){
         fprintf(stderr, "The input file was not found\n");
         return 1;}
-    strncpy(filetype, argv[2], 3);
+    strncpy(filetype, argv[2], sizeof(filetype) - 1);
+    filetype[sizeof(filetype) - 1] = '\0';
     while (fgets(inp, inpVar, fvar)){
-        sscanf(inp, "%6s %29s", cmd,filename);
+        sscanf(inp, "%11s %29s", cmd,filename);
         if (strcmp(cmd,"init") == 0){ 
             stat++;
             sprintf(status,"Status%d",stat);
@@ -80,6 +84,9 @@ int main(int argc, char** argv) {
             else if (resU == 2){
                 return resU;
             }
+            else if(resU !=0 ){
+                return resU;
+            }
             print_status(status, warehouses,objectCount, warehouseCount);
         }
 
@@ -104,6 +111,12 @@ int main(int argc, char** argv) {
             if (CrVar!=0)
             {
             return CrVar;
+            }
+        }
+        else if(strcmp(cmd, "transfer") == 0){
+            int TrVar = transfer_objects(filename);
+            if(TrVar !=0){
+                return TrVar;
             }
         }
         else{fprintf(stderr, "The command %s was not found\n", cmd); }
@@ -154,9 +167,11 @@ int init_objects(char filename[30]){
         fclose(ifvar);
         return 0;
 }
-int apply_update_count(struct Object *obj, char zn, int num) {
+int apply_update_count(struct Warehouse warehouse,struct Object *obj, char zn, int num) {
     if (zn == '+') {
         obj->quantity += num;
+        int res = object_properties_check(obj->quantity, *obj, warehouse);
+        if (res != 0){return res;}
         return 0;
     } 
     else if (zn == '-') {
@@ -179,6 +194,10 @@ int update_objects(char filename[30]){
             //printf("They are mathching\n");
             found = i;}
     }
+    if (found == -1){
+            fprintf(stderr, "The warehouse declared in %s (%s) is unknown", filename, wcode);
+            return 25;
+    }
     fgets(inp, inpVar, ufvar);
     while (fgets(inp, inpVar, ufvar)) {
         sscanf(inp, "%5s %1c %4s", code, zn, num);
@@ -190,9 +209,10 @@ int update_objects(char filename[30]){
                 return 2;
             }
         }
-        if (apply_update_count(&warehouses[found].objects[k], *zn, atoi(num)) != 0 ){
-            fprintf(stderr, "Error in update function. The code of the error is %d\n", apply_update_count(&objects[k], *zn, atoi(num)));
-            res++;
+        int res = apply_update_count(warehouses[found], &warehouses[found].objects[k], *zn, atoi(num));
+        if (res != 0 ){
+            fprintf(stderr, "Error in update function. The code of the error is %d\n", res);
+            return res;
         }
     }
     fclose(ufvar);
@@ -223,15 +243,19 @@ int Object_code_check(char* code){
 int CreateWarehouse(char filename[30]){
     char inp[inpVar];
     int i = 0;
-    FILE *fvar = fopen(filename, "r");
-    if (!fvar) return 11;
-    fgets(inp, inpVar, fvar);
+    FILE *cfvar = fopen(filename, "r");
+    if (!cfvar) return 11;
+    fgets(inp, inpVar, cfvar);
     sscanf(inp,"%5s %4d %1d %31[^\n] %2d", warehouses[wq].code, &warehouses[wq].capacity, &warehouses[wq].flammability,
           warehouses[wq].name ,&warehouses[wq].quantity_of_categories);
-    while (fgets(inp, inpVar, fvar)){
+    if (Object_code_check(warehouses[wq].code) == 1){
+        fprintf(stderr,"The incorrect code for warhouse in file %s was given", filename);
+    }
+    while (fgets(inp, inpVar, cfvar)){
         sscanf(inp,"%3s %4d %4d", warehouses[wq].categories[i].cat_info,&warehouses[wq].categories[i].amount, &warehouses[wq].categories[i].min);
         i++;
     }
+    warehouses[wq].quantity_of_categories = i;
     int check = WarehouseCheck(warehouses[wq], i);
     if(check != 0){return check;}
     check = Categories_check(warehouses[wq], i);
@@ -240,6 +264,7 @@ int CreateWarehouse(char filename[30]){
         warehouses[wq].objects[k] = objects[k];
     }
     wq++;
+    fclose(cfvar);
     return check;
 
 }
@@ -291,4 +316,89 @@ int Categories_check(struct Warehouse warehouse, int i){
         }
     }
     return 0;
+}
+int object_properties_check(int obj_quantity, struct Object object, struct Warehouse warehouse){// Перейменувати amount на properties
+    int k = 0;
+        if (obj_quantity > warehouse.capacity){
+            fprintf(stderr, "The amount of product is bigger than warehouse capacity\n");
+            return 26;
+        }
+        if (object.flammability > warehouse.flammability){
+            fprintf(stderr, "The flammability of the object %s is not allowed in warehouse %s\n", object.code,warehouse.code);
+            return 28;
+        }
+        for(int i = 0; i < warehouse.quantity_of_categories; i++){
+            if(strcmp(object.cat_info, warehouse.categories[i].cat_info)!=0){
+                k++;
+            }
+            else{
+                if (obj_quantity > warehouse.categories[i].amount){
+                    fprintf(stderr, "The amount of product is bigger than warehouse capacity for this category (%s)\n", warehouse.categories[i].cat_info);
+                    return 31;
+                }
+            }
+        }
+        if(k == warehouse.quantity_of_categories){
+            fprintf(stderr, "The category of the object %s is not allowed in warehouse %s\n", object.code,warehouse.code);
+            return 29;
+        }
+        return 0;
+}
+int transfer_objects(char filename[30]){
+    char inp[inpVar];
+    char fromcode [6];
+    char tocode [6];
+    int found_fr = 0;
+    int found_to = 0;
+    int Objectsquantity = 0;
+    char objcode [6];
+    int num = 0;
+    FILE *tfvar = fopen(filename, "r");
+    if (!tfvar) return 12;
+    fgets(inp, inpVar, tfvar);
+    sscanf(inp, "%5s %5s",tocode, fromcode);
+    if(Object_code_check(tocode) == 1){
+        fprintf(stderr, "the destination warehouse in the transfer file (%s) has incorrect code given\n", filename);
+        return 35;
+    }
+    if(Object_code_check(fromcode) == 1){
+        fprintf(stderr, "the starting warehouse in the transfer file (%s) has incorrect code given\n", filename);
+        return 36;
+    }
+    fgets(inp, inpVar, tfvar);
+    sscanf(inp, "%1d", &Objectsquantity);
+    for(int i = 0; i<warehouseCount; i++){
+        if(strcmp(warehouses[i].code, fromcode) == 0){
+            found_fr = i;
+        }
+        else if(strcmp(warehouses[i].code, tocode)==0){
+            found_to = i;
+        }
+    }
+    while(fgets(inp, inpVar, tfvar)){
+        sscanf(inp, "%5s %d",objcode,&num);
+        res = Object_code_check(objcode);
+        if (res !=0){
+            return res;
+        }
+        res = transfer_logic(num,objcode,&warehouses[found_fr], &warehouses[found_to]);
+        if(res != 0){
+            return res;
+        }
+    }
+    return 0;
+
+
+}
+int transfer_logic(int num,char object_code[], struct Warehouse *warehousefrom, struct Warehouse *warehouseto){
+    for(int i = 0; i<objectCount; i++){ 
+        if(strcmp(object_code, warehousefrom->objects[i].code) == 0){
+            if(num<=warehousefrom->objects[i].quantity){// && object_properties_check(num, warehouseto.objects[i], warehouseto) == 0){
+                warehouseto->objects[i].quantity = warehouseto->objects[i].quantity + num;
+                warehousefrom->objects[i].quantity = warehousefrom->objects[i].quantity - num;
+            }
+        }
+
+    }
+return 0;
 }

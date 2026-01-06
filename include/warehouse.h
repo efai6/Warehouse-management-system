@@ -15,7 +15,7 @@ struct Warehouse {
     int flammability;
     int quantity_of_categories;
     struct Object objects[1000];
-    category categories[10];
+    category categories[100];
 };
 
 #endif
