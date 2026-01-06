@@ -2,9 +2,11 @@
 #ifndef WAREHOUSE_H
 #define WAREHOUSE_H
 typedef struct{
-    char *info;
+    char cat_info[4];
     int amount;
     int min;
+    int main_cat;
+    char cat_class;
 }category;
 struct Warehouse {
     char code[6];

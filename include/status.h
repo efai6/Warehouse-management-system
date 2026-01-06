@@ -1,1 +1,1 @@
-void print_status(char filename[],struct Object *objects, int objectCount);
+void print_status(char filename[],struct Warehouse *warehouses, int objectCount, int warehouseCount);

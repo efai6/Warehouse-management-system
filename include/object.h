@@ -5,8 +5,7 @@ struct Object {
     char code[6];
     char name[32];
     int quantity;
-    int category;
-    int subcategory;
+    char cat_info[4];
     int flammability;
 };
 
