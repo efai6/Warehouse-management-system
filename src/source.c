@@ -6,6 +6,7 @@
 #include "print.h"
 #include "print_pdf.h"
 #include "status.h"
+
 int apply_update_count(struct Warehouse warehouse,struct Object *obj, char zn, int num);
 int init_objects(char filename[30]);
 int update_objects(char filename[30]);
@@ -16,6 +17,7 @@ int Categories_check(struct Warehouse warehouse, int i);
 int object_properties_check(int obj_quantity, struct Object object, struct Warehouse warehouse);
 int transfer_objects(char filename[30]);
 int transfer_logic(int num,char object_code[], struct Warehouse *warehousefrom, struct Warehouse *warehouseto);
+
 struct Object objects[1000];
 struct Warehouse warehouses[100];
 category categories[10];
@@ -99,7 +101,7 @@ int main(int argc, char** argv) {
                 print_txt(filename, warehouses,objectCount, warehouseCount);
             }
             else if (strcmp(filetype,"pdf") == 0){
-                print_pdf(filename, warehouses,objectCount, warehouseCount);
+                print_pdf(filename, warehouses,objectCount, warehouseCount, objects);
             }
             else{
                 fprintf(stderr, "Unpredicted type of output file\n");
