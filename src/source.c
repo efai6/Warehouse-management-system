@@ -399,6 +399,10 @@ int transfer_logic(int num,char object_code[], struct Warehouse *warehousefrom, 
                 warehouseto->objects[i].quantity = warehouseto->objects[i].quantity + num;
                 warehousefrom->objects[i].quantity = warehousefrom->objects[i].quantity - num;
             }
+            else{
+                fprintf(stderr, "Not enough objects %s in warehouse %s for transfering", warehousefrom->objects[i].code, warehousefrom->code);
+                return 40;
+            }
         }
 
     }
