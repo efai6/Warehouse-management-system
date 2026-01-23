@@ -75,7 +75,9 @@ void print_pdf(char filename[], struct Warehouse *warehouses,int objectCount, in
         "\\documentclass{article}\n"
         "\\usepackage{geometry}\n"
         "\\usepackage{caption}"
+        "\\captionsetup[longtable]{position=bottom}\n"
         "\\usepackage{array}\n"
+        "\\usepackage{longtable}\n"
         "\\geometry{margin=1in}\n"
         "\\begin{document}\n"
     );
@@ -101,12 +103,19 @@ void print_pdf(char filename[], struct Warehouse *warehouses,int objectCount, in
             "\\section{%s}\n", warehouses[j].code
         );
 
-        fprintf(fvar,
-            "\\begin{table}[h]\n"
+fprintf(fvar,
             "\\small\n"
-            "\\begin{tabular}{| m{3cm} | m{2cm} | m{7cm} |}\n"
+            "\\begin{longtable}{| m{3cm} | m{2cm} | m{7cm} |}\n"
             "\\hline\n"
             "Code & Quantity & Name \\\\ \\hline\n"
+            "\\endfirsthead\n"
+            "\\hline\n"
+            "Code & Quantity & Name (cont.) \\\\ \\hline\n"
+            "\\endhead\n"
+            "\\hline\n"
+            "\\caption{%s} \\\\\n"   
+            "\\endlastfoot\n",       
+            warehouses[j].name
         );
 
         for (int i = 0; i < objectCount; i++) {
@@ -117,11 +126,7 @@ void print_pdf(char filename[], struct Warehouse *warehouses,int objectCount, in
             }
         }
 
-        fprintf(fvar,
-            "\\end{tabular}\n"
-            "\\caption{%s}\n"
-            "\\end{table}\n",warehouses[j].name
-        );
+    fprintf(fvar, "\\end{longtable}\n");
     }
     fprintf(fvar, "\\newpage\n");
 
@@ -171,7 +176,7 @@ void print_pdf(char filename[], struct Warehouse *warehouses,int objectCount, in
             "\\end{tabular}\n");
         }
         fprintf(fvar,
-        "\\caption{List of all objects}\n"
+        "\\captionof{table}{List of all objects}\n"
         "\\end{document}\n"
         );
     fclose(fvar);
