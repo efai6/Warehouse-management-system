@@ -1,0 +1,10 @@
+init i.txt
+create df.txt
+print report1211
+create df1.txt
+create df2.txt
+update u.txt
+update ug.txt
+update yg.txt
+transfer i2.txt
+print report1411

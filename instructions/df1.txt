@@ -1,0 +1,5 @@
+MG253 650 6 Warehouse for lost children
+4.3 120 10
+4.5 300 200
+4 500 30
+5 100 10
